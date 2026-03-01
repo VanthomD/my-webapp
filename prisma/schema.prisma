@@ -29,6 +29,7 @@ enum Severity {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  emailVerified DateTime?
   name      String?
   createdAt DateTime @default(now())
 
