@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NcType {
+  QUALITY
+  SAFETY
+  BOTH
+}
+
+enum NcStatus {
+  NEW
+  TRIAGED
+  INVESTIGATING
+  CLOSED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+
+  reportedNcs NonConformity[] @relation("ReportedBy")
+  ownedNcs    NonConformity[] @relation("OwnedBy")
+  comments    NcComment[]
+  events      NcEvent[]
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  ncs       NonConformity[]
+}
+
+model NonConformity {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+
+  type        NcType
+  status      NcStatus  @default(NEW)
+  severity    Severity  @default(MEDIUM)
+
+  happenedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  locationId  String
+  location    Location  @relation(fields: [locationId], references: [id])
+
+  reportedById String
+  reportedBy   User      @relation("ReportedBy", fields: [reportedById], references: [id])
+
+  ownerId     String?
+  owner       User?      @relation("OwnedBy", fields: [ownerId], references: [id])
+
+  comments    NcComment[]
+  events      NcEvent[]
+
+  @@index([status, locationId, happenedAt])
+  @@index([type, severity])
+}
+
+model NcComment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  ncId      String
+  nc        NonConformity @relation(fields: [ncId], references: [id])
+
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id])
+}
+
+model NcEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  ncId      String
+  nc        NonConformity @relation(fields: [ncId], references: [id])
+
+  actorId   String
+  actor     User @relation(fields: [actorId], references: [id])
+
+  action    String
+  detail    Json
+}
